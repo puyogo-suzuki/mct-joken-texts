@@ -1,0 +1,325 @@
+@import: ../mystdjareport
+@require: code
+@require: itemize
+@require: tabular
+@require: proof
+@import: local
+
+document (|
+    title = {テキストエディタを作ろう};
+    class-name = {情報科学研究部用テキスト};
+    author = {Go Suzuki};
+    show-title = true;
+    show-toc = true;
+|) '<
+    +non-chapter{コンパイラ，OSの呼称方法}<
+        +p{
+            Microsoft CはMicrosoft製の最近のC++コンパイラのC言語部分を示す．つまり，\gray{`extern \"C\"`}で指定したVisual C++(2005以降)である．
+        }
+        +p{
+            BSDは実装上BSDのシステムコール・ヘッダが利用できるOS，つまり，FreeBSD, NetBSD, OpenBSD, DragonflyBSD, macOS(Darwin)を示す．古いBSDについては当てはまらない事項がある可能性がある．
+        }
+    >
+    +non-chapter{ライセンス}<
+        +p{
+            この文書はCC-BYである．また，この文書により生じる一切の請求、損害、その他の義務について何らの責任も負わないものとする．
+        }
+    >
+    +chapter{ファイルを読み書きしよう \box-text(RGB (0.0, 0.4, 0.0)){楽}}<
+        +section{標準ライブラリのセキュリティを考慮した正しい使い方}<
+            +p{
+                普段標準ライブラリをのほほ～んと使っていないだろうか．
+                危険でないプログラムを作るにはしっかりとエラーハンドリングを意識して実装することが重要である．
+                この章では，Visual C++しか実装していない\gray{`fscanf_s`}, \gray{`fopen_s`}などの話も混ぜつつ，エラーハンドリングを見ていこう．
+            }
+            +subsection{戻り値/error_noを意識して}<
+                +p{
+                    普段何気なく\gray{`fopen`}や，\gray{`fprintf`}などを使っていないだろうか．
+                }
+                +display-boxes('<
+                    +p{危険な使い方}
+                >)(```
+#include <stdio.h>
+
+int main(){
+    FILE * fp;
+    fp = fopen("hoge.txt", "r");
+    char buf[32]; // 現代のC言語では関数の頭で宣言しなくても良い．
+    fscanf(fp, "%s", buf);
+    puts(buf);
+    return 0;
+}
+                ```);
+                +subsubsection{戻り値は適切かを確認する}<
+                    +p{
+                        \gray{`fopen`}はファイルを開くのに失敗すると，\gray{`NULL`}を返す．
+                        開こうとしたファイルが存在しないことはよくあることで，正しくチェックすべきである．
+                    }
+                    +display-boxes('<
+                        +p{\gray{`fopen`}の戻り値を確認する．}
+                    >)(```
+//ファイル先頭
+#include <stdlib.h>
+//fp = fopen("hoge.txt", "r") == NULLを修正
+if((fp = fopen("hoge.txt", "r")) == NULL) {
+    puts("ERROR: Cannot open.");
+    exit(EXIT_FAILURE);
+}
+                    ```);
+                    +p{
+                        普通\gray{`NULL`}は\gray{`0`}であるが，これは標準Cには定義されていないので，正しく\gray{`NULL`}と書くべきである．
+                        if文の中で，エラーメッセージを表示して，\gray{`exit`}関数を呼び出している．エラーコードは\gray{`EXIT_FAILURE`}である．
+                        \gray{`1`}を入れる文献もあるが，同じ理由でしっかりと識別子を書くべきである．
+                    }
+                    +p{
+                        \gray{`fscanf`}についても同様に，チェックをしてみよう．`open`はできたものの書き込みに失敗することはたくさんある．
+                    }
+                    +display-boxes('<
+                        +p{\gray{`fscanf`}の戻り値を確認する．}
+                    >)(```
+//ファイル先頭
+#include <stdlib.h>
+//fscanf(fp, "%s", buf)を修正
+if(fscanf(fp, "%s", buf) == EOF) {
+    fprintf(stderr, "File write error.");
+}
+                    ```);
+                >
+                +subsubsection{エラーの内容を確認する}<
+                    +p{
+                        さて，ただファイルを開けないとエラー表示するだけではユーザに不親切である．エラーの情報が分かることが望ましい．そのためには，\gray{`errno.h`}を用いる．
+                    }
+                    +display-boxes('<
+                        +p{\gray{`errno`}を確認する．}
+                    >)(```
+//ファイル先頭
+#include <errno.h>
+//修正したものをさらに修正
+if((fp = fopen("hoge.txt", "r")) == NULL) {
+    puts("ERROR: Cannot open.");
+    perror("file open error");
+    exit(EXIT_FAILURE);
+}
+                    ```);
+                    +p{
+                        \gray{`perror`}はエラーを出力する関数である．通常\gray{`stderr`}のバッファに上記の例では以下のように出力される．
+                    }
+                    +display-boxes('<
+                        +p{\gray{`perror`}の出力}
+                    >)(```
+file open error: File Not Found
+                    ```);
+                    +p{
+                        エラーに関する文字列を返す関数\gray{`strerror`}も存在する．
+                    }
+                    +display-boxes('<
+                        +p{\gray{`strerror`}}
+                    >)(```
+char *strerror(int errnum);
+int strerror_r(int errnum, char *buf, size_t buflen);   // XSI
+char *strerror_r(int errnum, char *buf, size_t buflen); // GNU
+                    ```);
+                    +p{
+                        \gray{`strerror`}はそのままバッファへのポインタを返す．しかし，この関数はスレッドセーフでない場合があり，マルチスレッド環境での使用は推奨されない．
+                        一方，\gray{`strerror_r`}はXSI/GNU拡張である．\gray{`buf`}にエラーメッセージを格納する．それぞれで定義が違うのは二つの拡張によって使い方が異なる．
+                        XSIは成功すると0を返し，GNUは\gray{`buf`}をそのまま返すか，エラーメッセージが格納された静的なバッファへのポインタを返す．全く互換性がないことに注意しよう． 
+                    }
+                    +p{
+                        Microsoft Cでは，全く異なるアプローチ（Cオプション標準なやり方）でこの問題に対処していることを後述する．
+                    }
+                    +p{
+                        さらに，あなたがBSDやWindowsのプログラマであり，やる気があるならばExit Codeをそのエラーにあったものに変えると良いだろう．
+                        （Linuxでは標準のExit Codeが存在しない．）
+                    }
+                    +display-boxes('<
+                        +p{\gray{`exit`}のExit Codeを変える}
+                    >)(```
+//ファイル先頭
+#include <stdlib.h>
+#ifdef _WIN32
+#include <winerror.h>
+#elif defined(__FreeBSD__) || (defined(__NetBSD__) || \
+        defined(__OpenBSD__) || defined(__DragonflyBSD__) || \
+        defined(__APPLE__)
+#define EXIT_RETURN
+#include <sysexits.h>
+#endif
+//修正したものをさらに修正
+if((fp = fopen("hoge.txt", "r")) == NULL) {
+    printf("ERROR: Cannot open.\n");
+    perror("file open error");
+    if(errno == ENOENT) 
+#ifdef _WIN32
+        exit(ERROR_FILE_NOT_FOUND);
+#elif defined(EXIT_RETURN)
+        exit(EX_OSFILE);
+#else
+        exit(EXIT_FAILURE);
+#endif
+    else
+        exit(EXIT_FAILURE);
+}
+                    ```);
+                    +p{
+                        大抵のプログラマはこれを怠るが，普通のことなので，気にする必要はない．
+                    }
+                    +p{
+                        さて，あなたがC言語のプログラマでない場合，すなわち最近の言語のプログラマである場合，事はもっと簡単である．
+                    }
+                    +p{
+                        まず，ジャンプ例外機能のある言語だとどうだろうか．マルチスレッドのことなんか考えずにもっと簡潔に書くことができる．
+                    }
+                    +display-boxes('<
+                        +p{ジャンプ例外機能の例：Ruby}
+                    >)(```
+begin
+    file = File.open("hoge.txt", "r")
+rescure => error
+    p error
+    exit(1) # 環境依存
+end
+                    ```);
+                    +display-boxes('<
+                        +p{ジャンプ例外機能の例：C\#}
+                    >)(```
+try{
+    var file = new System.IO.StreamReader("hoge.txt");
+}catch(Exception ex){
+    System.Console.Error.WriteLine(ex);
+    System.Environment.Exit(1); // 環境依存
+}
+                    ```);
+                    +p{
+                        ファイルが存在するか否かを調べるために\gray{`fopen`}を用いることがある．
+                        これはC言語では正しい使い方であるが，ジャンプ例外機能のあるプログラミング言語では例外で条件分岐するのはやめるべきである．
+                        あくまで，エラーが起こった時のために使うべきである．基本的に，ファイルの存在可否を調べる関数が備わっているはずであり，そちらを使うべきである．
+                        一般的に，ジャンプ例外が発生した場合，プログラムのパフォーマンスはとても悪くなってしまう．
+                        ループで複数のファイルが存在するか否かを調べると，例外を使った場合とそうでない場合で実行速度が大幅に異なる．
+                        また，可読性の観点からもやめるべきである．
+                    }
+                    +p{
+                        次に，直和型（Union）のある言語の場合を見てみよう．ファイルの読み書きで使われる直和型とは，例えば，Rustの\gray{`Result<File>`}やHaskellの\gray{`IO`モナド}である．
+                        特徴としては，普通はエラーハンドリングをしなければならない点である．C言語やジャンプ例外機能のある言語は簡単にエラーハンドリングを無視することができる．
+                        一方で，これらの言語は意識してエラーハンドリングを無視しなければならない．例えば，Rustは\gray{`unwrap`}関数を用いて，
+                    }
+                    +display-boxes('<
+                        +p{Unionのある言語でエラーハンドリングを無視する例：Rust}
+                    >)(```
+let mut f = File::open("hoge.txt").unwrap();
+                    ```);
+                    +p{
+                        と書かねばならない．この時，エラーが発生すれば`panic`を起こしてプログラムは即時強制終了される．
+                        プログラマが注意しなくても安全なプログラムが書ける一方で，気軽にプログラムが書けないことが欠点だろうか．
+                        しかし，モナドの力を使えば，簡単にエラー処理を呼び出し元に任せることができる．Rustだと\gray{`?`}を付けることがそれに該当するだろう．
+                    }
+                    +p{
+                        では，エラーハンドリングをするとどう書けるだろうか．様々なやり方があるが，Rustの場合は，\gray{`match`}を用いると手続きのように書けて分かりやすいだろう．
+                    }
+                    +display-boxes('<
+                        +p{Unionのある言語での例：Rust}
+                    >)(```
+match File::open("hoge.txt") {
+    Ok(file) => ..
+    Err(ex) => {
+        eprintln!("{}", ex);
+        process::exit(1); // 環境依存
+    }
+}
+                    ```);
+                    +p{
+                        他にも便利な関数が沢山あるので，使いこなすと楽しく書けるだろう．
+                    }
+                >
+                +subsubsection{\gray{`fscanf`}のバッファオーバーラン}<
+                    +p {
+                        \gray{`fscanf`}では書式文字列\gray{`\%s`}を用いて文字列の読み取りをしているが，これは危険である．
+                        変数\gray{`buf`}は32バイト分の文字列を読み取ることができるが，これを超えた場合は，スタック上の他の変数を上書きしてしまう場合がある．
+                        つまり，\gray{`fscanf`}には最大何文字読み出して良いかを渡していないから，32バイト分の文字列を超える大きさの文字列を読み出してしまう可能性がある．
+                        そして，その文字列を変数\gray{`buf`}に書き込むが，この時に，変数\gray{`buf`}の領域を超える場所に書き込んでしまう．これは，他の変数等を書き換えてしまう可能性がある．
+                        そのため，読み込むバイト数を指定するべきである．
+                    }
+                    +display-boxes('<
+                        +p{読み込むバイト数を指定する}
+                    >)(```
+//fscanf(fp, "%s", buf);を修正
+fscanf(fp, "%31s", buf);
+                    ```);
+                    +p{
+                        また，C11のAnnex K Bounds-checking interfacesでは，\gray{`fscanf_s`}を利用することができる．（Microsoft Cが対応．）
+                    }
+                    +display-boxes('<
+                        +p{\gray{`fscanf_s`}を利用する}
+                    >)(```
+//fscanf(fp, "%s", buf);を修正
+fscanf_s(fp, "%s", buf, _countof(buf));
+                    ```);
+                    +p{
+                        また，\gray{`fgets`}が利用できるならば（複雑な処理でなければ），\gray{`fgets`}を使った方が性能が良くなるので，検討の余地はあるだろう．
+                    }
+                >
+                +subsubsection{お片付けは忘れずに}<
+                    +p{
+                        使ったリソースをこまめに使用後に片付けすることを心がけよう．
+                        ファイルの読み書きでは\gray{`fclose`}を使用する．
+                        今回の例では，プログラム終了後，OSが片づけることになるが，大規模なプログラムを書くと，ファイルを頻繁に読み書きすることがあるだろう．
+                        そういう場合に，片付けしなければ，簡単にハードウェア資源を消費しつくしてしまう．
+                    }
+                    +display-boxes('<
+                        +p{\gray{`fclose`}を利用する}
+                    >)(```
+//return文の前に挿入
+fclose(fp);
+                    ```);
+                    +p{
+                        ファイルの読み書き中にエラーハンドリング等で，\gray{`exit`}関数を実行する場合は，\gray{`atexit`}関数を利用すると良い．
+                        この関数は，プログラムの終了時に呼び出す関数を登録するものである．
+                    }
+                    +display-boxes('<
+                        +p{\gray{`atexit`}を活用して出来たプログラム}
+                    >)(```
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef _WIN32
+#include <winerror.h>
+#elif defined(__FreeBSD__) || (defined(__NetBSD__) || \
+        defined(__OpenBSD__) || defined(__DragonflyBSD__) || \
+        defined(__APPLE__)
+#define EXIT_RETURN
+#include <sysexits.h>
+#endif
+FILE * fp = NULL;
+
+void on_exit() {
+    if(fp != NULL)
+        fclose(fp);
+}
+
+int main(){
+    if((fp = fopen("hoge.txt", "r")) == NULL) {
+        printf("ERROR: Cannot open.\n");
+        perror("file open error");
+        if(errno == ENOENT) 
+    #ifdef _WIN32
+            exit(ERROR_FILE_NOT_FOUND);
+    #elif defined(EXIT_RETURN)
+            exit(EX_OSFILE);
+    #else
+            exit(EXIT_FAILURE);
+    #endif
+        else
+            exit(EXIT_FAILURE);
+    }
+    atexit(on_exit); // 終了時にon_exitを呼び出す
+    char buf[32]; // 現代のC言語では関数の頭で宣言しなくても良い．
+    fscanf(fp, "%31s", buf);
+    puts(buf);
+    // ...
+    return 0;
+}
+                    ```);
+                >
+            >
+        >
+
+    >
+>
