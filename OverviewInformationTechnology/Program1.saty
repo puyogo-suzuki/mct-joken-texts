@@ -360,7 +360,7 @@ free(p);
                     ポインタを別の場所にコピーしていた場合防げないが，マシにはなるだろう．
                 }
                 +display-boxes('<
-                    +p{\gray{`free`}-after-assign-\gray{`NULL`}}
+                    +p{\gray{`NULL`}-after-\gray{`free`}}
                 >)(```
 free(p);
 p = NULL;
