@@ -69,3 +69,7 @@ let-inline ctx \box-text col inner =
   let ctx2 = ctx |> set-text-color Color.white in
   let ib-frame = inline-frame-breakable pads-code decoset-code (read-inline ctx2 inner) in
     script-guard Latin ib-frame
+
+let-inline ctx \dfn inner =
+  let ctx2 = ctx |> set-text-color (RGB(.8, .0, .0)) in
+    read-inline ctx2 inner

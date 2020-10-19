@@ -319,7 +319,53 @@ int main(){
                     ```);
                 >
             >
+            +subsubsection{\box-text(RGB(.0, .0, .0)){補講}mallocもエラーチェックをしよう}<
+                +p{
+                    もう一つ，特にエラーチェックしたい関数がヒープアロケーション関係の関数である．
+                    \gray{`malloc`}, \gray{`calloc`}, \gray{`realloc`}等のアロケーションをする関数は，利用可能な空きメモリがない場合に\gray{`NULL`}を返す．
+                }
+                +display-boxes('<
+                    +p{\gray{`NULL`}と\gray{`malloc`}}
+                >)(```
+char * p = (char *)malloc(sizeof(char) * 32);
+if(p == NULL) {
+    fputs("malloc failed.", stderr);
+    exit(EXIT_FAILURE);
+}
+                ```);
+                +p{
+                    64bit環境の贅沢にメモリが使える環境であれば大丈夫だが，マイコンや，16bit, 8bit環境であれば，アロケーションに失敗する可能性は高まる．
+                    それらの環境では特に気を付けるべきである．
+                }
+                +p{
+                    そして，片付けとして必ず\gray{`free`}関数を呼び出すことを忘れてはいけない．
+                    アロケーションをたくさんして，不要になったのに解放しないことを\dfn{メモリリーク}と呼ぶ．
+                    連続稼働するサーバプログラムやIoT機器等では，メモリリークするプログラムを混入させないことが非常に重要である．
+                }
+                +display-boxes('<
+                    +p{\gray{`free`}}
+                >)(```
+free(p);
+                ```);
+                +p{
+                    さらに，一度解放した領域を利用したり，もう一度解放させてはならない．
+                    前者を\dfn{use-after-free}，後者を\dfn{double-free}と呼ぶ．
+                    \dfn{use-after-free}は，解放後の領域は\gray{'malloc'}によってまた別の場所で使われている可能性があるからである．
+                    その領域を上書きすれば，どこか別の関数で想定外の値の変化として障害が起きてしまう．
+                    一方，\dfn{double-free}は実装によってダメになる仕組みがあるので，ネットで調べてみると良い．
+                    double-freeは侮ってはいけない．double-freeを利用した権限昇格の脆弱性の例もあり，気を付けるべきである．
+                }
+                +p{
+                    さて，対処法としては一つ，\gray{`free`}の後に必ず\gray{`NULL`}を代入することが挙げられるだろう．
+                    ポインタを別の場所にコピーしていた場合防げないが，マシにはなるだろう．
+                }
+                +display-boxes('<
+                    +p{\gray{`free`}-after-assign-\gray{`NULL`}}
+                >)(```
+free(p);
+p = NULL;
+                ```);
+            >
         >
-
     >
 >
