@@ -319,7 +319,7 @@ int main(){
                     ```);
                 >
             >
-            +subsubsection{\box-text(RGB(.0, .0, .0)){補講}mallocもエラーチェックをしよう}<
+            +subsubsection{\box-text(RGB(.0, .0, .0)){補講}\gray{malloc}もエラーチェックをしよう}<
                 +p{
                     もう一つ，特にエラーチェックしたい関数がヒープアロケーション関係の関数である．
                     \gray{`malloc`}, \gray{`calloc`}, \gray{`realloc`}等のアロケーションをする関数は，利用可能な空きメモリがない場合に\gray{`NULL`}を返す．
