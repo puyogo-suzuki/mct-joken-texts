@@ -632,6 +632,7 @@ end = struct
     let () = increment num-chapter in
     let () = num-section <- 0 in
     let () = num-subsection <- 0 in
+    let () = num-subsubsection <- 0 in
     let s-num = arabic (!num-chapter) in
     let () = register-cross-reference (label ^ `:num`) s-num in
     let () = toc-acc-ref <- (TOCElementChapter(label, title)) :: !toc-acc-ref in
@@ -656,6 +657,7 @@ end = struct
     let ctx-title = make-section-title ctx in
     let () = increment num-section in
     let () = num-subsection <- 0 in
+    let () = num-subsubsection <- 0 in
     let s-num = arabic (!num-chapter) ^ `.` ^ arabic (!num-section) in
     let () = register-cross-reference (label ^ `:num`) s-num in
     let () = toc-acc-ref <- (TOCElementSection(label, title)) :: !toc-acc-ref in
@@ -678,6 +680,7 @@ end = struct
 
 
   let subsection-scheme ctx label title outline-title-opt inner =
+    let () = num-subsubsection <- 0 in
     let () = num-subsection <- !num-subsection + 1 in
     let s-num = arabic (!num-chapter) ^ `.` ^ arabic (!num-section) ^ `.` ^ arabic (!num-subsection) in
     let () = register-cross-reference (label ^ `:num`) s-num in

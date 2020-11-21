@@ -1,0 +1,101 @@
+@import: ../../../mystdjareport
+@require: code
+@require: itemize
+@require: tabular
+@require: proof
+@import: ../../local
+
+document (|
+    title = {テキストエディタを作ろう\fil-both;（実装編：C）};
+    class-name = {情報科学研究部用テキスト};
+    author = {Go Suzuki};
+    show-title = true;
+    show-toc = true;
+|) '<
+    +non-chapter{ライセンス}<
+        +p{
+            この文書はCC-BYである．また，この文書により生じる一切の請求、損害、その他の義務について何らの責任も負わない．
+        }
+    >
+    +chapter{ファイルを読み書きしよう \box-text(RGB (0.0, 0.4, 0.0)){楽}}<
+        +p{
+            では，ラインエディタと呼ばれるものを最初に作ってみよう．ed, edwinが有名である．
+        }
+        +subsection{ファイル読み込み}<
+            +p{
+                ファイル読み込みは\gray{`fopen`}を\gray{`a+`}モードで開く．戻り値チェックなどは忘れずに行おう．（\gray{`openFile`}関数）
+            }
+            +p{
+                読み込んで，格納してみよう．それには可変長配列が必要であるから作ろう．(buffer構造体である．)
+            }
+
+            +p{
+                さて，scanfを用いてコマンドを受付けよう．とりあえず，\gray{`fgets`}で一行読み込み，解析する．
+            }
+            +code(```
+char tmp[128];
+printf("> ");
+fgets(tmp, sizeof(tmp), stdin);
+if(tmp[0] == '\n') {
+    continue;
+}
+int start, end;
+if(!parse(tmp, &start, &end)) {
+    switch(tmp[0]) {
+        case 'w':
+            writeFile(&textBuffer, argv[1]);
+            break;
+        case 'q':
+            exit(0);
+    }
+}
+switch(tmp[0]) {
+    case 'p':
+        printLines(&textBuffer, start, end);
+        break;
+    case 'a':
+        appendLines(&textBuffer, start, end);
+        break;
+    case 'r':
+        removeLines(&textBuffer, start, end);
+        break;
+}
+            ```);
+            +p{
+                \gray{`parse`}はコマンドを実行する範囲の部分を解析する関数である．
+                そして，\gray{`switch`}を用いて実行するコマンドを判別している．
+            }
+            +p{
+                \gray{`w`}はファイルを保存する関数で，\gray{`q`}はプログラムを終了する関数である．
+            }
+            +p{
+                \gray{`p`}はファイルの内容を表示する関数，\gray{`a`}は追記する関数，\gray{`r`}は消す関数である．それぞれ行数を記述する．
+                \gray{`a`}で追記する時，\gray{`.`}を入力すると終了できる．
+            }
+            +code(```
+> p0,3
+hoge
+piyo
+fuga
+funya
+> a1
+puru
+pura
+.
+> p0,5
+hoge
+piyo
+puru
+pura
+fuga
+funya
+> r4,100000
+> p0,1000
+hoge
+piyo
+puru
+> q（プログラム終了）
+            ```);
+        >
+    >
+>
