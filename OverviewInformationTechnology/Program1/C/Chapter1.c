@@ -8,21 +8,21 @@ struct buffer {
     int cap; // capacity
 };
 
-#define BUFFER_EXTENT_SIZE 256
+#define BUFFER_EXTEND_SIZE 256
 
 int insertString(struct buffer * me, char * content, int start, int size) {
     if(me->cap - me->len < size) {
-        char * new_buf = (char *)realloc(me->buf, me->cap + BUFFER_EXTENT_SIZE);
+        char * new_buf = (char *)realloc(me->buf, me->cap + BUFFER_EXTEND_SIZE);
         if(new_buf != NULL) {
             me->buf = new_buf;
-            me->cap += BUFFER_EXTENT_SIZE;
+            me->cap += BUFFER_EXTEND_SIZE;
         } else {
-            new_buf = (char *)malloc(me->cap + BUFFER_EXTENT_SIZE);
+            new_buf = (char *)malloc(me->cap + BUFFER_EXTEND_SIZE);
             if(new_buf != NULL) {
                 memcpy(new_buf, me->buf, me->len);
                 free(me->buf);
                 me->buf = new_buf;
-                me->cap += BUFFER_EXTENT_SIZE;
+                me->cap += BUFFER_EXTEND_SIZE;
             } else {
                 return 0;
             }
