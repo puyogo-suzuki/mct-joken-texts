@@ -23,6 +23,7 @@ document (|
         }
         +section{作るモノ}<
             +code(```
+$ ./a.out hoge.txt
 > p0,3
 hoge
 piyo
@@ -186,6 +187,154 @@ int parse(char * buf, int * start, int * end) // 返り値は成功したか
             +p{
                 ここまでできた君ならば行けるはず！
             }
+        >
+        +section{メモリマップトファイルを用いてファイル読み込みをしてみよう}<
+            +subsection{仮想メモリ}<
+                +p{
+                    我々が使っているポインタは，アドレスを示すが，そのアドレスは主記憶装置上の物理的な位置を直接指し示すものではない．
+                    直接指し示すアドレスのことを\dfn{物理アドレス}, \dfn{physical address}と呼び，
+                    我々が普段触っているアドレスを\dfn{論理アドレス}, \dfn{仮想アドレス}, \dfn{virtual address}と呼ぶ．
+                    CPUには\dfn{メモリ管理ユニット}, \dfn{Memory Management Unit, MMU}があって，
+                    私たちがポインタを\dfn{デリファレンス}, \dfn{dereference}（\gray{`int * a; *a = 0;`}とすること）
+                    すると，それが高速に仮想アドレスから物理アドレスに変換してくれる．
+                    そして，そのメモリ管理ユニットを管理してくれるのがOSである．
+                    また，この仕組みのことを\dfn{仮想メモリ}, \dfn{virtual memory}と呼ぶ．
+                }
+                +p{
+                    メモリ管理ユニットのおかげで，あるプログラムのメモリ上のデータを他のプログラムから改竄されることを防いだり，
+                    メモリの断片化が起こったときに領域を移動させることで解決したり，
+                    プロセスがたくさんメモリを欲しがったときにすぐに新しい領域を確保したり，
+                    メモリがいっぱいになったときに，データをディスクに退避させる，といったことができるようになる．
+                }
+            >
+            +subsection{メモリマップトファイル}<
+                +p{
+                    メモリ管理ユニットは参照先が見つからないときに，OSに助けを求める．
+                    そのときに，ファイルの内容をメモリに読み込んで，読み込んだ場所を指すようにする．
+                    すると，メモリ管理の仕組みによってファイルの読み書きができるようになる！
+                    この仕組みやこの仕組みによって読み書きされるファイルのことを\dfn{メモリマップトファイル}, \dfn{memory mapped file}と呼ぶ．
+                    システムコールは何回も呼び出すと遅くなるのに対し，この方法であれば高速に大容量のファイルを読み書きすることができる．
+                }
+            >
+            +subsection{メモリマップトファイルと普通の読み書きを比較してみよう}<
+                +p{
+                    ソースコードをそれぞれ示す．
+                }
+                +display-boxes('<
+                    +p{ライブラリの読み書き}
+                >)(```
+#include <stdio.h>
+
+int main(void) {
+    char buf[16];
+    FILE * fp = fopen("hoge.c", "r");
+    for(int i = 0; i < 10000; ++i) {
+        fseek(fp, 0L, SEEK_SET);
+        while(fread(buf, sizeof(char), 16, fp) != 0);
+    }
+    fclose(fp);
+    return buf[0];
+}
+                ```);
+                +display-boxes('<
+                    +p{\gray{`read`}}
+                >)(```
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+int main(void) {
+    char buf[16];
+    int fp = open("hoge.c", O_RDONLY);
+    for(int i = 0; i < 10000; ++i) {
+        lseek(fp, 0L, SEEK_SET);
+        while(read(fp, buf, sizeof(buf)) != 0);
+    }
+    close(fp);
+    return buf[0];
+}
+```);
+                +display-boxes('<
+                    +p{メモリマップトファイル}
+                >)(```
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+int main(void) {
+    int fd;
+    char *map;
+
+    struct stat statBuf;
+
+    if (stat("hoge.c", &statBuf) != 0) {
+        printf("Error : can't stat¥n");
+        return 1;
+    }
+
+    fd = open("hoge.c", O_RDONLY);
+    if(fd < 0) {
+        printf("Error : can't open file\n");
+        return -1;
+    }
+    map = (char*)mmap(NULL, statBuf.st_size, PROT_READ, MAP_SHARED, fd, 0);
+    if(map == MAP_FAILED) {
+        printf("Error : mmap failed\n");
+        return -1;
+    }
+
+    char buf[16];
+    int iterate = 0;
+    for(int i = 0; i < 10000; ++i)
+        for(iterate = 0; iterate < statBuf.st_size; iterate += 16) 
+            memcpy(buf, (map + iterate),
+            statBuf.st_size <= (iterate + 16) ? (statBuf.st_size - iterate) : 16);
+    close(fd);
+    munmap(map, statBuf.st_size);
+    return 0;
+}
+                ```);
+                +p{
+                    実行結果は次のようになった．
+                }
+                +display-boxes('<
+                    +p{ライブラリの読み書きの速度}
+                >)(```
+$ time ./a.out 
+
+real    0m0.035s
+user    0m0.013s
+sys     0m0.022s
+```);
+                +display-boxes('<
+                    +p{\gray{`read`}の読み書きの速度}
+                >)(```
+$ time ./a.out 
+
+real    0m0.162s
+user    0m0.029s
+sys     0m0.133s
+```);
+                
+                +display-boxes('<
+                    +p{メモリマップトファイルの速度}
+                >)(```
+$ time ./a.out 
+
+real    0m0.004s
+user    0m0.003s
+sys     0m0.001s
+```);
+                +p {
+                    速い！特に，\gray{`sys`}（カーネルが消費した時間）が大きく違う．
+                }
+                +p {
+                    だが，注意としては，闇雲にページを作るとOSの処理が遅くなること（たくさんページテーブルエントリができてしまう．）が挙げられる．
+                    大きいファイルで，何回も読み込まれる可能性のあるもののみメモリマップトファイルを用いるようにしよう．
+                }
+            >
         >
     >
 >
