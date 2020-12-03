@@ -180,7 +180,7 @@ if((fp = fopen("hoge.txt", "r")) == NULL) {
                     >)(```
 begin
     file = File.open("hoge.txt", "r")
-rescure => error
+rescue => error
     p error
     exit(1) # 環境依存
 end
