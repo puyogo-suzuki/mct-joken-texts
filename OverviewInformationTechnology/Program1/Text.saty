@@ -236,67 +236,66 @@ match File::open("hoge.txt") {
                         他にも便利な関数が沢山あるので，使いこなすと楽しく書けるだろう．
                     }
                 >
-            >
-            +subsection{ファイルの読み書きの際に気を付けること}<
-                +p{
-                    では実際にファイルを読み込んでみよう．
-                }
-                +subsubsection{\gray{`fopen`}}<
+                +subsection{ファイルの読み書きの際に気を付けること}<
                     +p{
-                        \gray{`fopen`}にはモードがある．読み込みなら\gray{`r`}，書き込みなら\gray{`w`}，そして追記は\gray{`a`}である．
-                        \gray{`+`}は読み込みも書き込みもする場合に使われ，
-                        \gray{`w+`}は既存のファイルを削除し，\gray{`r+`}は既存のファイルが存在しないとエラーになる．そして，\gray{`a+`}はあっても無くても良い．
-                        もし，テキストエディタではなくバイナリエディタを使うのであれば，\gray{`b`}を用いる．
-                        バイナリモードであれば，\gray{CTRL+Z}を\gray{`EOF`}として認識しなくなる違いがある．（つまりファイルの最後まで読み込む．）
+                        では実際にファイルを読み込んでみよう．
                     }
-                >
-                +subsubsection{\gray{`fscanf`}のバッファオーバーラン}<
-                    +p {
-                        \gray{`fscanf`}では書式文字列\gray{`%s`}を用いて文字列の読み取りをしているが，これは危険である．
-                        変数\gray{`buf`}は32バイト分の文字列を読み取ることができるが，これを超えた場合は，スタック上の他の変数を上書きしてしまう場合がある．
-                        つまり，\gray{`fscanf`}には最大何文字読み出して良いかを渡していないから，32バイト分の文字列を超える大きさの文字列を読み出してしまう可能性がある．
-                        そして，その文字列を変数\gray{`buf`}に書き込むが，この時に，変数\gray{`buf`}の領域を超える場所に書き込んでしまう．これは，他の変数等を書き換えてしまう可能性がある．
-                        そのため，読み込むバイト数を指定するべきである．
-                    }
-                    +display-boxes('<
-                        +p{読み込むバイト数を指定する}
-                    >)(```
+                    +subsubsection{\gray{`fopen`}}<
+                        +p{
+                            \gray{`fopen`}にはモードがある．読み込みなら\gray{`r`}，書き込みなら\gray{`w`}，そして追記は\gray{`a`}である．
+                            \gray{`+`}は読み込みも書き込みもする場合に使われ，
+                            \gray{`w+`}は既存のファイルを削除し，\gray{`r+`}は既存のファイルが存在しないとエラーになる．そして，\gray{`a+`}はあっても無くても良い．
+                            もし，テキストエディタではなくバイナリエディタを使うのであれば，\gray{`b`}を用いる．
+                            バイナリモードであれば，\gray{CTRL+Z}を\gray{`EOF`}として認識しなくなる違いがある．（つまりファイルの最後まで読み込む．）
+                        }
+                    >
+                    +subsubsection{\gray{`fscanf`}のバッファオーバーラン}<
+                        +p {
+                            \gray{`fscanf`}では書式文字列\gray{`%s`}を用いて文字列の読み取りをしているが，これは危険である．
+                            変数\gray{`buf`}は32バイト分の文字列を読み取ることができるが，これを超えた場合は，スタック上の他の変数を上書きしてしまう場合がある．
+                            つまり，\gray{`fscanf`}には最大何文字読み出して良いかを渡していないから，32バイト分の文字列を超える大きさの文字列を読み出してしまう可能性がある．
+                            そして，その文字列を変数\gray{`buf`}に書き込むが，この時に，変数\gray{`buf`}の領域を超える場所に書き込んでしまう．これは，他の変数等を書き換えてしまう可能性がある．
+                            そのため，読み込むバイト数を指定するべきである．
+                        }
+                        +display-boxes('<
+                            +p{読み込むバイト数を指定する}
+                        >)(```
 //fscanf(fp, "%s", buf);を修正
 fscanf(fp, "%31s", buf);
-                    ```);
-                    +p{
-                        また，C11のAnnex K Bounds-checking interfacesでは，\gray{`fscanf_s`}を利用することができる．（Microsoft Cが対応．）
-                    }
-                    +display-boxes('<
-                        +p{\gray{`fscanf_s`}を利用する}
-                    >)(```
+                        ```);
+                        +p{
+                            また，C11のAnnex K Bounds-checking interfacesでは，\gray{`fscanf_s`}を利用することができる．（Microsoft Cが対応．）
+                        }
+                        +display-boxes('<
+                            +p{\gray{`fscanf_s`}を利用する}
+                        >)(```
 //fscanf(fp, "%s", buf);を修正
 fscanf_s(fp, "%s", buf, _countof(buf));
-                    ```);
-                    +p{
-                        また，\gray{`fgets`}が利用できるならば（複雑な処理でなければ），\gray{`fgets`}を使った方が性能が良くなるので，検討の余地はあるだろう．
-                    }
-                >
-                +subsubsection{お片付けは忘れずに}<
-                    +p{
-                        使ったリソースをこまめに使用後に片付けすることを心がけよう．
-                        ファイルの読み書きでは\gray{`fclose`}を使用する．
-                        今回の例では，プログラム終了後，OSが片づけることになるが，大規模なプログラムを書くと，ファイルを頻繁に読み書きすることがあるだろう．
-                        そういう場合に，片付けしなければ，簡単にハードウェア資源を消費しつくしてしまう．
-                    }
-                    +display-boxes('<
-                        +p{\gray{`fclose`}を利用する}
-                    >)(```
+                        ```);
+                        +p{
+                            また，\gray{`fgets`}が利用できるならば（複雑な処理でなければ），\gray{`fgets`}を使った方が性能が良くなるので，検討の余地はあるだろう．
+                        }
+                    >
+                    +subsubsection{お片付けは忘れずに}<
+                        +p{
+                            使ったリソースをこまめに使用後に片付けすることを心がけよう．
+                            ファイルの読み書きでは\gray{`fclose`}を使用する．
+                            今回の例では，プログラム終了後，OSが片づけることになるが，大規模なプログラムを書くと，ファイルを頻繁に読み書きすることがあるだろう．
+                            そういう場合に，片付けしなければ，簡単にハードウェア資源を消費しつくしてしまう．
+                        }
+                        +display-boxes('<
+                            +p{\gray{`fclose`}を利用する}
+                        >)(```
 //return文の前に挿入
 fclose(fp);
-                    ```);
-                    +p{
-                        ファイルの読み書き中にエラーハンドリング等で，\gray{`exit`}関数を実行する場合は，\gray{`atexit`}関数を利用すると良い．
-                        この関数は，プログラムの終了時に呼び出す関数を登録するものである．
-                    }
-                    +display-boxes('<
-                        +p{\gray{`atexit`}を活用して出来たプログラム}
-                    >)(```
+                        ```);
+                        +p{
+                            ファイルの読み書き中にエラーハンドリング等で，\gray{`exit`}関数を実行する場合は，\gray{`atexit`}関数を利用すると良い．
+                            この関数は，プログラムの終了時に呼び出す関数を登録するものである．
+                        }
+                        +display-boxes('<
+                            +p{\gray{`atexit`}を活用して出来たプログラム}
+                        >)(```
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _WIN32
@@ -337,55 +336,321 @@ int main(){
     return 0;
 }
 ```);
+                    >
                 >
             >
-        >
-        +subsection{\box-text(RGB(.0, .0, .0)){補講}\gray{`malloc`}もエラーチェックをしよう}<
-            +p{
-                もう一つ，特にエラーチェックしたい関数がヒープアロケーション関係の関数である．
-                \gray{`malloc`}, \gray{`calloc`}, \gray{`realloc`}等のアロケーションをする関数は，利用可能な空きメモリがない場合に\gray{`NULL`}を返す．
-            }
-            +display-boxes('<
-                +p{\gray{`NULL`}と\gray{`malloc`}}
-            >)(```
+            +subsection{\box-text(RGB(.0, .0, .0)){補講}\gray{`malloc`}もエラーチェックをしよう}<
+                +p{
+                    もう一つ，特にエラーチェックしたい関数がヒープアロケーション関係の関数である．
+                    \gray{`malloc`}, \gray{`calloc`}, \gray{`realloc`}等のアロケーションをする関数は，利用可能な空きメモリがない場合に\gray{`NULL`}を返す．
+                }
+                +display-boxes('<
+                    +p{\gray{`NULL`}と\gray{`malloc`}}
+                >)(```
 char * p = (char *)malloc(sizeof(char) * 32);
 if(p == NULL) {
     fputs("malloc failed.", stderr);
     exit(EXIT_FAILURE);
 }
-            ```);
-            +p{
-                64bit環境の贅沢にメモリが使える環境であれば大丈夫だが，マイコンや，16bit, 8bit環境であれば，アロケーションに失敗する可能性は高まる．
-                それらの環境では特に気を付けるべきである．
-            }
-            +p{
-                そして，片付けとして必ず\gray{`free`}関数を呼び出すことを忘れてはいけない．
-                アロケーションをたくさんして，不要になったのに解放しないことを\dfn{メモリリーク}と呼ぶ．
-                連続稼働するサーバプログラムやIoT機器等では，メモリリークするプログラムを混入させないことが非常に重要である．
-            }
-            +display-boxes('<
-                +p{\gray{`free`}}
-            >)(```
+```);
+                +p{
+                    64bit環境の贅沢にメモリが使える環境であれば大丈夫だが，マイコンや，16bit, 8bit環境であれば，アロケーションに失敗する可能性は高まる．
+                    それらの環境では特に気を付けるべきである．
+                }
+                +p{
+                    そして，片付けとして必ず\gray{`free`}関数を呼び出すことを忘れてはいけない．
+                    アロケーションをたくさんして，不要になったのに解放しないことを\dfn{メモリリーク}と呼ぶ．
+                    連続稼働するサーバプログラムやIoT機器等では，メモリリークするプログラムを混入させないことが非常に重要である．
+                }
+                +display-boxes('<
+                    +p{\gray{`free`}}
+                >)(```
 free(p);
-            ```);
-            +p{
-                さらに，一度解放した領域を利用したり，もう一度解放させてはならない．
-                前者を\dfn{use-after-free}，後者を\dfn{double-free}と呼ぶ．
-                \dfn{use-after-free}は，解放後の領域は\gray{`malloc`}によってまた別の場所で使われている可能性があるからである．
-                その領域を上書きすれば，どこか別の関数で想定外の値の変化として障害が起きてしまう．
-                一方，\dfn{double-free}は実装によってダメになる仕組みがあるので，ネットで調べてみると良い．
-                double-freeは侮ってはいけない．double-freeを利用した権限昇格の脆弱性の例もあり，気を付けるべきである．
-            }
-            +p{
-                さて，対処法としては一つ，\gray{`free`}の後に必ず\gray{`NULL`}を代入することが挙げられるだろう．
-                ポインタを別の場所にコピーしていた場合防げないが，マシにはなるだろう．
-            }
-            +display-boxes('<
-                +p{\gray{`NULL`}-after-\gray{`free`}}
-            >)(```
+```);
+                +p{
+                    さらに，一度解放した領域を利用したり，もう一度解放させてはならない．
+                    前者を\dfn{use-after-free}，後者を\dfn{double-free}と呼ぶ．
+                    \dfn{use-after-free}は，解放後の領域は\gray{`malloc`}によってまた別の場所で使われている可能性があるからである．
+                    その領域を上書きすれば，どこか別の関数で想定外の値の変化として障害が起きてしまう．
+                    一方，\dfn{double-free}は実装によってダメになる仕組みがあるので，ネットで調べてみると良い．
+                    double-freeは侮ってはいけない．double-freeを利用した権限昇格の脆弱性の例もあり，気を付けるべきである．
+                }
+                +p{
+                    さて，対処法としては一つ，\gray{`free`}の後に必ず\gray{`NULL`}を代入することが挙げられるだろう．
+                    ポインタを別の場所にコピーしていた場合防げないが，マシにはなるだろう．
+                }
+                +display-boxes('<
+                    +p{\gray{`NULL`}-after-\gray{`free`}}
+                >)(```
 free(p);
 p = NULL;
-            ```);
+```);
+            >
+            +subsection{\box-text(RGB(.0, .0, .0)){補講}C11のAnnex K拡張}<
+                +p{
+                    さて，今まで本書ではC11のAnnex K拡張を利用してきたが，利用は推奨されない．
+                    なぜなら，Annex K拡張を正しく実装したコンパイラは存在せず（提案したMicrosoft Visual C++でさえ！），
+                    将来のバージョンのC言語で使用を削除することが提言されているからである．
+                    GNU Cの実装者の提出したレポート
+                    \footnote{Carlos O'Donell, Martin Sebor:Updated Field Experience With Annex K — Bounds Checking Interfaces, \href(`http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm`){http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm}}
+                    では，書きづらいことや，長さを渡すときに，\gray{`sizeof`}や\gray{`strlen`}の使い方を誤ったりすることがあることを指摘している．
+                    （Annex Kに限らず，\gray{`sizeof`}や\gray{`strlen`}の使い方を間違える人が多いでしょと思ったりもしますが…）
+                    そのレポートでは，代替案としてアドレスサニタイザやIntel MPX（最新のCPUではもはや使えない）を推奨しているが，オーバーヘッドが大きい．
+                    GCCの人たちはもっと真面目に考えるべきではないだろうか．
+                    なので，セキュアに動くプログラムを作りたければ，C++やOSのAPIの利用を検討した方が良さそうである．
+                }
+            >
+        >
+        +section{標準ライブラリの先にあるもの}<
+            +p{
+                さて，標準ライブラリの関数の先にあるものを考えたことがあるだろうか．
+                例えば，ファイルの読み書きをする時には，もちろん記憶装置にデータを読みに行く必要がある．
+                そんな大変な処理は誰がしてくれるのでしょう--そう，OSです．
+            }
+            +subsection{Operating System, Operation System} <
+                +p{
+                    Operating Systemはハードウェアを抽象化し，リソースを管理するプログラムのことだ．
+                    例えば，SSD上のファイル読み込みをする際，あなたはSSDのデータシートを読んだだろうか．
+                    そうではなくて，標準Cライブラリの仕様書（あるいは入門書）を読んで実装したはずだ．
+                    そのように実装すれば，あなたのSSDがHDDに変わったって，データの読み書きができる．
+                    さらに，NFSなどを用いてネットワーク上のアイテムにアクセスすることができるはずである．
+                    このハードウェアの違いを吸収することがOSの一つ目の役割であるハードウェアの抽象化である．
+                }
+                +p{
+                    そして，OSはリソースを管理する．リソースとは，ファイルだけでなく，プロセスやメモリも含まれる．
+                    あなたのプログラムでメモリを読み書きする時，あなたのプログラムは他のプログラムのメモリを読み書きすることができるだろうか．
+                    リソースをOSがうまく管理することで，効率よくマシンを動かすことができ，あなたのプログラムのメモリの中のデータを他のプログラムから守ることができる．
+                }
+                +subsection{カーネル, Kernel}<
+                    +p{
+                        OSの核の部分が\dfn{カーネル}, \dfn{kernel}である．カーネルはOSとその上で動くプログラムが動くための基本的なメカニズムを提供する．
+                        カーネルはユーザプログラムやOSのプログラムとハードウェアの仲介をする役割を持つ．
+                        一般的に，プログラムが動作する情報の集合体である\dfn{process}, \dfn{プロセス}の管理，
+                        プロセスとプロセスがやり取りするための\dfn{Inter-Process Communication, IPC},\dfn{プロセス間通信}の機能，
+                        そしてハードウェアにアクセスするための手段を提供する．
+                    }
+                    +p{
+                        一つ，重要なのがカーネルランドと，ユーザランドである．
+                        カーネルランドは全てのハードウェアにアクセスできる特権モードで実行されるプログラムの範囲をさす．
+                        カーネルは通常カーネルランドで実行される．
+                        一方，ユーザランドは非特権モードで実行される．すなわちユーザランドでハードウェアを触りたい場合，
+                        カーネルに処理を依頼する必要がある．
+                    }
+                >
+            >
+            +subsection{システムコール, system call，API}<
+                +p{
+                    さて，例えばファイルの読み書きには記憶装置を操作することが不可欠である．
+                    ユーザランドで動く標準ライブラリはどのようにして処理を依頼しているか，それは\dfn{システムコール}を利用している．
+                    システムコールと言われて難しく感じるかもしれないが，普通の関数呼び出しとそう変わりはない．
+                    やり方はCPUによって異なるが，例えば，システムコール用の命令があったり，割り込みを発生させたりする．
+                    （Intel x86上で動作するOSはその昔，システムコール用の命令があったにもかかわらず，速いからという理由で例外割り込みを用いてシステムコールを実現していた．）
+                    \dfn{システムコール}はカーネルによって異なる．したがって，標準Cライブラリはカーネル&OS間の差異を埋めているのである．
+                    また，システムコールや標準ライブラリなどの関数の集合のことをAPIと呼ぶ．開発者はOS（カーネル）やライブラリのAPIを用いてプログラミングを行っている．
+                }
+                +p{
+                    カーネルの持つシステムコールを呼び出した時，ユーザランドから，カーネルランドに切り替えてカーネルが実行する．
+                    すなわち，CPUの動作モードが変更されて処理が実行される．
+                    システムコールを沢山呼ぶと，オーバーヘッドが発生し速度が低下してしまう．
+                    したがって，システムコールが少ないほど，処理の速いOSとなる．
+                    例えば，Linuxではファイルの読み込みを一つのシステムコールでできる\gray{`readfile`}を追加した．
+                    従来\gray{`open`}, \gray{`read`}, \gray{`close`}と3つのシステムコールを呼ぶことでできていた処理を，
+                    1つのシステムコールで行うことができ，実行速度の向上が期待できる．
+                }
+            >
+            +subsection{システムコールを覗いてみよう}<
+                +p{
+                    では，ファイルを開いて読むだけのプログラムのシステムコールを呼ぶ様子を覗いてみよう．
+                    次のようなプログラムを用意しよう．
+                }
+                +display-boxes('<
+                    +p{hoge.c}
+                >)(```
+#include <stdio.h>
+
+int main(void) {
+    char buf[16];
+    FILE * fp = fopen("hoge.c", "r");
+    fgets(buf, sizeof(buf), fp);
+    fclose(fp);
+    return buf[0];
+}
+```);
+                +subsubsection{Linux}<
+                    +p{
+                        このプログラムをコンパイルして，\gray{`strace`}と共に実行してみよう．
+                    }
+                    +display-boxes('<
+                        +p{shell}
+                    >)(```
+$ strace a.out
+```);
+                    +p {
+                        次のように表示されたはずである．
+                    }
+                    +display-boxes('<
+                        +p{\gray{strace a.out} with linux-5.4 and clang-10.0}
+                    >)(```
+....いろいろ
+openat(AT_FDCWD, "hoge.c", O_RDONLY)    = 3
+fstat(3, {st_mode=S_IFREG|0664, st_size=163, ...}) = 0
+read(3, "#include <stdio.h>\n\nint main(voi"..., 4096) = 163
+close(3)                                = 0
+```);
+                    +p{
+                        \gray{`strace`}は呼ばれたシステムコールを表示してくれるプログラムである．
+                        \gray{`openat`}, \gray{`fstat`}, \gray{`read`}, \gray{`close`}というシステムコールが呼ばれてるのが確認できる．
+                        それぞれは英語の意味の通りの動作をする関数であり，Linuxのシステムコールである．
+                        \href(`https://linuxjm.osdn.jp/html/LDP_man-pages/man2/`){https://linuxjm.osdn.jp/html/LDP_man-pages/man2/}を見ると，
+                        Linuxにある全てのシステムコールのドキュメントを見ることができる．
+                        興味があればそれを見ると良いだろう．（実際に，C言語から直接呼び出してみても良いだろう．）
+                    }
+                >
+                +subsubsection{XNU(macOS)}<
+                    +p{
+                        このプログラムをコンパイルして，\gray{`dtruss`}と共に実行してみよう．
+                    }
+                    +display-boxes('<
+                        +p{shell}
+                    >)(```
+# dtruss -c ./a.out
+```);
+                    +p {
+                        次のように表示されたはずである．
+                    }
+                    +display-boxes('<
+                        +p{\gray{sudo dtruss -c ./a.out} with Darwin 19.6.0 and Clang 12.0}
+                    >)(```
+....いろいろ
+open_nocancel("hoge.c\0", 0x0, 0x1B6)  = 3 0
+fstat64(0x3, 0x7FFEE6C8B9A8, 0x0)  = 0 0
+read_nocancel(0x3, "#in...\n\0", 0x1000)  = 163 0
+lseek(0x3, 0xFFFFFFFFFFFFFF6C, 0x1)	  = 15 0
+close_nocancel(0x3)	 = 0 0
+....いろいろ
+```);
+                    +p{
+                        \gray{`dtruss`}は呼ばれたシステムコールを表示してくれるプログラムである．
+                        \gray{`open_nocancel`}, \gray{`read_nocancel`}, \gray{`close_nocancel`}というシステムコールが呼ばれてるのが確認できる．
+                        それぞれは英語の意味の通りの動作をする関数であり，XNU(FreeBSD)のシステムコールである．
+                        \href(`https://github.com/apple/darwin-xnu/blob/master/bsd/kern/syscalls.master`){https://github.com/apple/darwin-xnu/blob/master/bsd/kern/syscalls.master}を見ると，
+                        XNUにある全てのシステムコールの一覧を見ることができる．
+                        Appleのドキュメントで検索すれば出てくるので，それを使ってみても良いだろう．
+                    }
+                >
+                +subsubsection{NT(Windows)}<
+                    +p{
+                        このプログラムをコンパイルして，NtTraceと共に実行してみよう．
+                    }
+                    +p{
+                        NtTraceはgithubにおいてあり，ビルドにVisual Studio 2017以降が必要である．
+                        プロジェクトのURLは\href(`https://github.com/rogerorr/NtTrace`){https://github.com/rogerorr/NtTrace}である．
+                        スタートメニューからDevelopers CommandPromptを開き，保存したフォルダに行って，\gray{`namake NtTrace.mak`}を実行することでビルドできる．
+                        \gray{`NtTrace.exe`}ができた実行ファイルなので，それを用いて
+                    }
+                    +display-boxes('<
+                        +p{shell}
+                    >)(```
+> NtTrace.exe hoge.exe
+```);
+                    +p {
+                        と実行すれば次のような行が表示されたはずである．
+                    }
+                    +display-boxes('<
+                        +p{\gray{NtTrace.exe hoge.exe} with Nt Build 19042 and Visual C++ 19.28.29334}
+                    >)(```
+NtCreateFile( FileHandle=0x7829cff968 [0x78], DesiredAccess=SYNCHRONIZE|GENERIC_READ|0x80, ObjectAttributes=0x48:"hoge.c", IoStatusBlock=0x7829cff970 [0/1], AllocationSize=null, FileAttributes=0x80, ShareAccess=3, CreateDisposition=1, CreateOptions=0x60, EaBuffer=null, EaLength=0 ) => 0
+NtReadFile( FileHandle=0x78, Event=0, ApcRoutine=null, ApcContext=null, IoStatusBlock=0x7829cffbd0 [0/0xaa], Buffer=0x22969d69470, Length=0x1000, ByteOffset=null, Key=null ) => 0
+NtClose( Handle=0x78 ) => 0
+```);
+                    +p{
+                        \gray{`NtTrace`}は呼ばれたシステムコールを表示してくれるプログラムである．
+                        \gray{`NtCreateFile`}, \gray{`NtReadFile`}, \gray{`NtClose`}というシステムコールが呼ばれてるのが確認できる．
+                        それぞれは英語の意味の通りの動作をする関数であり，NTのシステムコールである．
+                        \href(`https://j00ru.vexillium.org/syscalls/nt/64/`){https://j00ru.vexillium.org/syscalls/nt/64/}を見ると，
+                        NTにある全てのシステムコールの一覧を見ることができる．
+                        Windows Driver Kitを使うと実際に自分で呼び出してみることができる．（または，Wineのヘッダファイルを流用するのも手である．）
+                    }
+                >
+            >
+            +subsection{多様性のあるOSの世界}<
+                +p{
+                    さて，全てのOSが異なるシステムコールでファイルの読み書きをしていることがわかるだろうか．
+                    このように，OSは三者三様であるが，大きく4つの種別に分けることができる．
+                }
+                +subsubsection{モノリシックカーネル}<
+                    +p{
+                        \dfn{モノリシックカーネル}は，全てのOSの機能をカーネルが担う．この方法では次のような利点がある．
+                    }
+                    +enumerate{
+                        * 速い
+                        * すぐに動くものが書ける
+                        * 組み込み向けの機能が少ないマイコン上でも動作する
+                        * 低機能なときはバグが少なく，容量も小さい
+                    }
+                    +p{
+                        しかし，様々な機能を追加してコードが肥大化すると，次にあげるような欠点が生まれてしまう．
+                    }
+                    +enumerate {
+                        * 保守が困難
+                        * コードの結合度が強く，分割しづらい
+                        * 移植性が低く，カスタマイズしづらい
+                        * 特定の機能だけをアップデートすることが困難
+                    }
+                    +p{
+                        また，バグを作ってしまうと，そのバグがセキュリティ上の問題やフリーズ，リブート，ユーザのプログラムを壊したりしてしまう．
+                        これは，カーネルはカーネルランドで動作する，つまり特権モードで動くので，一つのバグがOS全体に多大な影響を及ぼしてしまうからである．
+                    }
+                    +p{
+                        モノリシックカーネルは，MS-DOS(Windows), Linux, FreeBSD, Solaris, NetBSD, OpenBSD, FreeRTOSなどがある．
+                        あのでかいプログラムを保守しているLinus Tordvalds氏，マジやべぇ
+                    }
+                >
+                +subsubsection{マイクロカーネル}<
+                    +p{
+                        一方，\dfn{マイクロカーネル}は様々な機能がたくさんの\dfn{サーバ}に分割されている．
+                        マイクロカーネルはただ，プロセス管理，プロセス間通信，そしてハードウェアを操作する方法のみを提供する．
+                        マイクロカーネルは次の利点がある．
+                    }
+                    +enumerate{
+                        * 保守が容易
+                        * セキュリティ的に有利
+                        * 特定の機能だけをアップデートすることが可能
+                        * 動作中に機能をアップデートすることができる
+                        * 冗長化することでバグ耐性に強い
+                    }
+                    +p{
+                        欠点は次の通りである．
+                    }
+                    +enumerate {
+                        * システムコールの呼び出し回数が多くなり，処理速度が低下する
+                        * メモリ使用量が増大する
+                    }
+                    +p{
+                        QNXやMach, GNU Hurdがこれに当たる．
+                    }
+                >
+                +subsubsection{ハイブリッドカーネル} <
+                    +p{
+                        また，マイクロカーネルとモノリシックカーネルの中間として\dfn{ハイブリッドカーネル}がある．
+                        処理を早くしたい機能をカーネルに含めることで速度低下を防ぐ．
+                    }
+                    +p{
+                        NT(Windows), XNU(macOS, 自称ナノカーネル), NewOS(Haiku, 自称ナノカーネル), Fuchia, DragonflyBSDがこれに当たる．
+                        だから，Linuxでプリンタするときにドライバにバグがあったらカーネルごと落ちるのに対し，Windowsは落ちない．
+                        （グラフィクスドライバはブルースクリーンになるが，レジストリを変更して回避することができる．）
+                    }
+                >
+                +subsubsection{Exokernel}<
+                    +p{
+                        ユーザのプログラムとカーネルの大部分(Library OS)をくっつけて，その下で動くのが\dfn{Exokernel}である．
+                        Exokernelはハードウェアを保護する機能だけを提供し，ユーザランドで直接ハードウェアとやり取りするユーザのプログラムが動く．
+                    }
+                    +p{
+                        L4がこれである．また，Windows Linux SubsystemやDragonflyBSDのvkernelはこれと同じやり方で実現されている．
+                    }
+                >
+            >
         >
     >
 >
