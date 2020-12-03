@@ -1,0 +1,142 @@
+@import: ../../../mystdjareport
+@require: code
+@require: itemize
+@require: tabular
+@require: proof
+@import: ../../local
+
+document (|
+    title = {テキストエディタを作ろう\fil-both;（実装編：Ruby）};
+    class-name = {情報科学研究部用テキスト};
+    author = {Go Suzuki};
+    show-title = true;
+    show-toc = true;
+|) '<
+    +non-chapter{ライセンス}<
+        +p{
+            この文書はCC-BYである．また，この文書により生じる一切の請求、損害、その他の義務について何らの責任も負わない．
+        }
+    >
+    +chapter{ファイルを読み書きしよう \box-text(RGB (0.0, 0.4, 0.0)){楽}}<
+        +p{
+            では，ラインエディタと呼ばれるものを最初に作ってみよう．ラインエディタはedが有名である．
+        }
+        +section{作るモノ}<
+            +code(```
+$ hoge.rb hoge.txt
+> p0,3
+hoge
+piyo
+fuga
+funya
+> a1
+puru
+pura
+.
+> p0,5
+hoge
+piyo
+puru
+pura
+fuga
+funya
+> r4,100000
+> p0,1000
+hoge
+piyo
+puru
+> q（プログラム終了）
+            ```);
+            +p{
+                作るラインエディタは，引数に読み書きするファイル名を指定する．
+                \gray{`>`}を表示してコマンドを待機する．コマンドは次の通りである．
+            }
+            +enumerate{
+                * q : プログラムを終了する
+                * w : 変更を保存する（ファイルに書き出す）
+                * p : 指定された範囲の行を表示する
+                * r : 指定された範囲の行を削除する
+                * a : 指定された行の後に入力された行を追加する（\gray{`.`}で入力終了．）
+            }
+            +p{
+                範囲指定は，\gray{`<start>,<end>`}という書式で行う．
+                \gray{`<start>`}以上\gray{`<end>`}未満であることを表す．
+                \gray{`<start>`}とだけ渡された場合は，\gray{`<start>`}以上\gray{`<start> + 1`}未満であると解釈する．
+            }
+        >
+        +section{読み書きする関数を用意しよう}<
+            +p{
+                まずはファイルを読み書きする関数を用意してみよう．
+            }
+            +code(```
+openFile(str)
+    # ファイル読み込みする．返り値はファイルの内容
+writeFile(str, path)
+    # ファイル書き込みする．返り値は成功したか
+```);  
+            +p{
+                ファイル読み込みは\gray{`File.open`}を\gray{`r`}モードで開く．（\gray{`openFile`}関数）
+                そして，読み込んで，文字列を返そう．
+            }
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`openFile`}のヒント} <
+                +listing{
+                    * \gray{`File#read`}を使おう．
+                }
+            >
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`writeFile`}のヒント} <
+                +listing{
+                    * \gray{`File#read`}を使おう．
+                }
+            >
+        >
+        +section{各処理を作っていこう}<
+            +p{
+                各コマンドに対応する処理を作っていこう．
+            }
+            +code(```
+// 全てstartは始まりの行，eは終わりの行です！ 
+printLines(str, start, e)
+    // 内容を表示する．
+appendLines(str, start, e)
+    // 追加する．eは無視しよう．
+removeLines(str, start, e)
+    // 削除する．
+```);  
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`printLines`}のヒント} <
+                +listing{
+                    * \gray{`char.each`}ループと\gray{`putc`}で1文字ずつ処理していこう．
+                    * \gray{`\n`}が来たら，次の行に移った合図だ．
+                }
+            >
+            +subsection{\box-text(RGB (1.0, 0.0, 0.0)){難}\gray{`appendLines`}のヒント}<
+                +listing {
+                    * \gray{`printLines`}と同様に行をカウントしていこう．
+                    * 挿入は\gray{`String#insert`}を使おう．
+                }
+            >
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`removeLines`}のヒント} <
+                +listing{
+                    * \gray{`printLines`}と同様に行をカウントしていこう．
+                }
+            >
+        >
+        +section{コマンドを解析しよう}<
+            +p{
+                コマンドの範囲選択のところを解析する関数を作ろう．
+            }
+            +code(```
+parse(str) // 返り値は始まりと終わり
+```);
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}ヒント} <
+                +listing{
+                    * 正規表現を使ってみよう．
+                }
+            >
+        >
+        +section{mainを用意しよう}<
+            +p{
+                ここまでできた君ならば行けるはず！
+            }
+        >
+    >
+>
