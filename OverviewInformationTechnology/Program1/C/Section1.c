@@ -22,24 +22,27 @@ int newString(char * content, int size, struct buffer * result) {
 
 int insertString(struct buffer * me, char * content, int start, int size) {
     if(me->cap - me->len < size) {
-        char * new_buf = (char *)realloc(me->buf, me->cap + BUFFER_EXTEND_SIZE);
+        int new_cap = me->cap + BUFFER_EXTEND_SIZE;
+        while(new_cap < me-len + size)
+            new_cap += BUFFER_EXTEND_SIZE;
+        char * new_buf = (char *)realloc(me->buf, new_cap);
         if(new_buf != NULL) {
             me->buf = new_buf;
-            me->cap += BUFFER_EXTEND_SIZE;
+            me->cap = new_cap;
         } else {
-            new_buf = (char *)malloc(me->cap + BUFFER_EXTEND_SIZE);
+            new_buf = (char *)malloc(new_cap);
             if(new_buf != NULL) {
                 memcpy(new_buf, me->buf, me->len);
                 free(me->buf);
                 me->buf = new_buf;
-                me->cap += BUFFER_EXTEND_SIZE;
+                me->cap = new_cap;
             } else {
                 return 0;
             }
         }
     }
     start = start >= me->len ? me->len : start;
-    for(int i = me->len + size; i >= start + size; --i)
+    for(int i = me->len + size - 1; i >= start + size; --i)
         me->buf[i] = me->buf[i-size];
     memcpy(me->buf + start, content, size);
     me->len += size;
