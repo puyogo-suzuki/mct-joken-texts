@@ -10,6 +10,16 @@ struct buffer {
 
 #define BUFFER_EXTEND_SIZE 256
 
+int newString(char * content, int size, struct buffer * result) {
+    char * buf = (char *)malloc(size * 2);
+    if(buf == NULL) return 0;
+    memcpy(buf, content, size);
+    result->buf = buf;
+    result->len = size;
+    result->cap = size * 2;
+    return 1;
+}
+
 int insertString(struct buffer * me, char * content, int start, int size) {
     if(me->cap - me->len < size) {
         char * new_buf = (char *)realloc(me->buf, me->cap + BUFFER_EXTEND_SIZE);
@@ -42,16 +52,6 @@ void removeString(struct buffer * me, int start, int size) {
         me->buf[i] = me->buf[end + i];
     }
     me->len -= (end-start);
-}
-
-int newString(char * content, int size, struct buffer * result) {
-    char * buf = (char *)malloc(size * 2);
-    if(buf == NULL) return 0;
-    memcpy(buf, content, size);
-    result->buf = buf;
-    result->len = size;
-    result->cap = size * 2;
-    return 1;
 }
 
 int isNum(char c) {
@@ -125,7 +125,7 @@ void printLines(struct buffer * buf, int start, int end) {
     }
 }
 
-void appendLines(struct buffer * buf, int start, int end) {
+int appendLines(struct buffer * buf, int start, int end) {
     int lfCount = 0;
     int i = 0;
     char tmp[1024];
@@ -138,9 +138,11 @@ void appendLines(struct buffer * buf, int start, int end) {
         if(fgets(tmp, sizeof(tmp), stdin) == NULL) return;
         if(tmp[0] == '.') return;
         int size = strlen(tmp);
-        insertString(buf, tmp, i, size);
+        int retVal = insertString(buf, tmp, i, size);
+        if(retVal == 0) return 0;
         i += size;
     }
+    return 1;
 }
 
 void removeLines(struct buffer * buf, int start, int end) {
@@ -188,7 +190,10 @@ int main(int argc, char ** argv) {
                 printLines(&textBuffer, start, end);
                 break;
             case 'a':
-                appendLines(&textBuffer, start, end);
+                if(!appendLines(&textBuffer, start, end)) {
+                    puts("malloc error.");
+                    exit(1);
+                }
                 break;
             case 'r':
                 removeLines(&textBuffer, start, end);

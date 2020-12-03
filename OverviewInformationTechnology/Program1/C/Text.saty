@@ -19,56 +19,9 @@ document (|
     >
     +chapter{ファイルを読み書きしよう \box-text(RGB (0.0, 0.4, 0.0)){楽}}<
         +p{
-            では，ラインエディタと呼ばれるものを最初に作ってみよう．ed, edwinが有名である．
+            では，ラインエディタと呼ばれるものを最初に作ってみよう．ラインエディタはedが有名である．
         }
-        +subsection{ファイル読み込み}<
-            +p{
-                ファイル読み込みは\gray{`fopen`}を\gray{`r`}モードで開く．戻り値チェックなどは忘れずに行おう．（\gray{`openFile`}関数）
-                そして，読み込んで，格納してみよう．それには可変長配列が必要であるから作ろう．(buffer構造体である．)
-            }
-            +p{
-                さて，ファイルが読み込めたら，scanfを用いてコマンドを受付けよう．とりあえず，\gray{`fgets`}で一行読み込み，解析する．
-            }
-            +code(```
-char tmp[128];
-printf("> ");
-fgets(tmp, sizeof(tmp), stdin);
-if(tmp[0] == '\n') {
-    continue;
-}
-int start, end;
-if(!parse(tmp, &start, &end)) {
-    switch(tmp[0]) {
-        case 'w':
-            writeFile(&textBuffer, argv[1]);
-            break;
-        case 'q':
-            exit(0);
-    }
-}
-switch(tmp[0]) {
-    case 'p':
-        printLines(&textBuffer, start, end);
-        break;
-    case 'a':
-        appendLines(&textBuffer, start, end);
-        break;
-    case 'r':
-        removeLines(&textBuffer, start, end);
-        break;
-}
-            ```);
-            +p{
-                \gray{`parse`}はコマンドを実行する範囲の部分を解析する関数である．
-                そして，\gray{`switch`}を用いて実行するコマンドを判別している．
-            }
-            +p{
-                \gray{`w`}はファイルを保存する関数で，\gray{`q`}はプログラムを終了する関数である．
-            }
-            +p{
-                \gray{`p`}はファイルの内容を表示する関数，\gray{`a`}は追記する関数，\gray{`r`}は消す関数である．それぞれ行数を記述する．
-                \gray{`a`}で追記する時，\gray{`.`}を入力すると終了できる．
-            }
+        +section{作るモノ}<
             +code(```
 > p0,3
 hoge
@@ -93,6 +46,138 @@ piyo
 puru
 > q（プログラム終了）
             ```);
+            +p{
+                作るラインエディタは，引数に読み書きするファイル名を指定する．
+                \gray{`>`}を表示してコマンドを待機する．コマンドは次の通りである．
+            }
+            +enumerate{
+                * q : プログラムを終了する
+                * w : 変更を保存する（ファイルに書き出す）
+                * p : 指定された範囲の行を表示する
+                * r : 指定された範囲の行を削除する
+                * a : 指定された行の後に入力された行を追加する（\gray{`.`}で入力終了．）
+            }
+            +p{
+                範囲指定は，\gray{`<start>,<end>`}という書式で行う．
+                \gray{`<start>`}以上\gray{`<end>`}未満であることを表す．
+                \gray{`<start>`}とだけ渡された場合は，\gray{`<start>`}以上\gray{`<start> + 1`}未満であると解釈する．
+            }
+        >
+        +section{可変長配列}<
+            +p{
+                テキストファイルのデータを保存するために，可変長配列を用意しよう．そのため，次の構造体を用意しよう．
+            }
+            +code(```
+struct buffer {
+    char * buf;  // buffer
+    int len; // length
+    int cap; // capacity
+};
+```);  
+            +p{
+                \gray{`buf`}はバッファへのポインタ，\gray{`cap`}は確保したバッファのサイズ，\gray{`len`}は実際の文字列のサイズである．
+            }
+            +p{
+                そして，次の関数を用意してみよう．
+            }
+            +code(```
+int newString(char * content, int size, struct buffer * result) // contentの内容でsize分だけのバッファを確保し，resultに格納する．返り値は成功したか．
+int insertString(struct buffer * me, char * content, int start, int size) // meにcontent(長さはsize)をstartの位置から挿入する．返り値は成功したか．
+void removeString(struct buffer * me, int start, int size) // meをstartの位置からsize分だけ削除する，
+```);  
+            +p{
+                実装する際は絵を描いて考えてみよう．
+            }
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`newString`}のヒント}<
+                +listing {
+                    * \gray{malloc}を用いてバッファを確保し，\gray{memcpy}で内容をコピーしよう．
+                }
+            >
+            +subsection{\box-text(RGB (1.0, 0.0, 0.0)){難}\gray{`insertString`}のヒント}<
+                +listing {
+                    * \gray{`me->cap < (me->len + size)`}のときは，バッファを確保しなおそう．
+                    * まず，\gray{`start`}の位置から最後までの文字を\gray{`size`}だけ後に動かそう．
+                    * 動かしたら，\gray{`start`}の位置に\gray{`content`}を書き込もう．
+                }
+            >
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`removeString`}のヒント} <
+                +listing{
+                    * \gray{`start+size`}から最後までの文字を\gray{`size`}だけ前に動かさなきゃいけない．
+                }
+            >
+        >
+        +section{読み書きする関数を用意しよう}<
+            +p{
+                まずはファイルを読み書きする関数を用意してみよう．
+            }
+            +code(```
+int openFile(struct buffer * buf, char * path) // ファイル読み込みする．内容はbufに格納される．返り値は成功したか
+int writeFile(struct buffer * buf, char * path) // ファイル書き込みする．返り値は成功したか
+```);  
+            +p{
+                ファイル読み込みは\gray{`fopen`}を\gray{`r`}モードで開く．戻り値チェックなどは忘れずに行おう．（\gray{`openFile`}関数）
+                そして，読み込んで，作った可変長配列に格納してみよう．
+            }
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`openFile`}のヒント} <
+                +listing{
+                    * \gray{`newString`}して可変長配列を作ろう．
+                    * \gray{`gets`}と\gray{`insertString`}でどんどん読み込んでいこう．
+                }
+            >
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`writeFile`}のヒント} <
+                +listing{
+                    * \gray{`fwrite`}で一気にやろう．
+                }
+            >
+        >
+        +section{各処理を作っていこう}<
+            +p{
+                各コマンドに対応する処理を作っていこう．
+            }
+            +code(```
+// 全てstartは始まりの行，endは終わりの行です！
+void printLines(struct buffer * buf, int start, int end) // 内容を表示する．
+int appendLines(struct buffer * buf, int start, int end) // 追加する．endは無視しよう．返り値は成功したか
+void removeLines(struct buffer * buf, int start, int end) // 削除する．
+```);  
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`printLines`}のヒント} <
+                +listing{
+                    * \gray{`for`}ループと\gray{`putc`}で1行ずつ処理していこう．
+                    * \gray{`\n`}が来たら，次の行に移った合図だ．
+                }
+            >
+            +subsection{\box-text(RGB (1.0, 0.0, 0.0)){難}\gray{`appendLines`}のヒント}<
+                +listing {
+                    * \gray{`printLines`}と同様に行をカウントしていこう．
+                    * 挿入は\gray{`insertString`}を使おう．
+                    * とりあえず1行あたり1024文字まで入力できる，と仮定しておこう．（可変長はコンソールAPIを使わなきゃいけない）
+                }
+            >
+            +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`removeLines`}のヒント} <
+                +listing{
+                    * \gray{`printLines`}と同様に行をカウントしていこう．
+                }
+            >
+        >
+        +section{コマンドを解析しよう}<
+            +p{
+                コマンドの範囲選択のところを解析する関数を作ろう．
+            }
+            +code(```
+int parse(char * buf, int * start, int * end) // 返り値は成功したか
+```);
+            +subsection{\box-text(RGB (1.0, 0.0, 0.0)){難}ヒント} <
+                +listing{
+                    * まず，どこからどこまでが数字かを判断して，しっかりとカンマがあるか，あるいは改行が来て終わるか判別しよう．
+                    * 書式が正しいことを確認したら\gray{`sscanf`}を用いて，数を読み取ろう．
+                    * 改行ならば終わり，カンマがあるならば，次の数のところからまた\gray{`sscanf`}を用いよう．
+                }
+            >
+        >
+        +section{mainを用意しよう}<
+            +p{
+                ここまでできた君ならば行けるはず！
+            }
         >
     >
 >
