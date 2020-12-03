@@ -150,7 +150,7 @@ void removeLines(struct buffer * buf, int start, int end)
 ```);  
             +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`printLines`}のヒント} <
                 +listing{
-                    * \gray{`for`}ループと\gray{`putc`}で1行ずつ処理していこう．
+                    * \gray{`for`}ループと\gray{`putc`}で1文字ずつ処理していこう．
                     * \gray{`\n`}が来たら，次の行に移った合図だ．
                 }
             >
