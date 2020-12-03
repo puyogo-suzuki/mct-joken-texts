@@ -81,9 +81,12 @@ struct buffer {
                 そして，次の関数を用意してみよう．
             }
             +code(```
-int newString(char * content, int size, struct buffer * result) // contentの内容でsize分だけのバッファを確保し，resultに格納する．返り値は成功したか．
-int insertString(struct buffer * me, char * content, int start, int size) // meにcontent(長さはsize)をstartの位置から挿入する．返り値は成功したか．
-void removeString(struct buffer * me, int start, int size) // meをstartの位置からsize分だけ削除する，
+int newString(char * content, int size, struct buffer * result)
+    // contentの内容でsize分だけのバッファを確保し，resultに格納する．返り値は成功したか．
+int insertString(struct buffer * me, char * content, int start, int size)
+    // meにcontent(長さはsize)をstartの位置から挿入する．返り値は成功したか．
+void removeString(struct buffer * me, int start, int size)
+    // meをstartの位置からsize分だけ削除する，
 ```);  
             +p{
                 実装する際は絵を描いて考えてみよう．
@@ -111,8 +114,10 @@ void removeString(struct buffer * me, int start, int size) // meをstartの位�
                 まずはファイルを読み書きする関数を用意してみよう．
             }
             +code(```
-int openFile(struct buffer * buf, char * path) // ファイル読み込みする．内容はbufに格納される．返り値は成功したか
-int writeFile(struct buffer * buf, char * path) // ファイル書き込みする．返り値は成功したか
+int openFile(struct buffer * buf, char * path)
+    // ファイル読み込みする．内容はbufに格納される．返り値は成功したか
+int writeFile(struct buffer * buf, char * path)
+    // ファイル書き込みする．返り値は成功したか
 ```);  
             +p{
                 ファイル読み込みは\gray{`fopen`}を\gray{`r`}モードで開く．戻り値チェックなどは忘れずに行おう．（\gray{`openFile`}関数）
@@ -136,9 +141,12 @@ int writeFile(struct buffer * buf, char * path) // ファイル書き込みす�
             }
             +code(```
 // 全てstartは始まりの行，endは終わりの行です！
-void printLines(struct buffer * buf, int start, int end) // 内容を表示する．
-int appendLines(struct buffer * buf, int start, int end) // 追加する．endは無視しよう．返り値は成功したか
-void removeLines(struct buffer * buf, int start, int end) // 削除する．
+void printLines(struct buffer * buf, int start, int end)
+    // 内容を表示する．
+int appendLines(struct buffer * buf, int start, int end)
+    // 追加する．endは無視しよう．返り値は成功したか
+void removeLines(struct buffer * buf, int start, int end)
+    // 削除する．
 ```);  
             +subsection{\box-text(RGB (0.0, 0.4, 0.0)){易}\gray{`printLines`}のヒント} <
                 +listing{
