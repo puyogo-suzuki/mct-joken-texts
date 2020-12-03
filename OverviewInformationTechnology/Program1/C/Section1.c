@@ -39,7 +39,8 @@ int insertString(struct buffer * me, char * content, int start, int size) {
         }
     }
     start = start >= me->len ? me->len : start;
-    memcpy(me->buf + start + size, me->buf + start, me->len - start);
+    for(int i = me->len + size; i >= start + size; --i)
+        me->buf[i] = me->buf[i-size];
     memcpy(me->buf + start, content, size);
     me->len += size;
     return 1;
