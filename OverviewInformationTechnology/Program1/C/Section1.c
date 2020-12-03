@@ -42,14 +42,15 @@ int insertString(struct buffer * me, char * content, int start, int size) {
     memcpy(me->buf + start + size, me->buf + start, me->len - start);
     memcpy(me->buf + start, content, size);
     me->len += size;
+    return 1;
 }
 
 void removeString(struct buffer * me, int start, int size) {
     if(start >= me->len) return;
     int end = size + start;
     if(end > me->len) end = me->len;
-    for(int i = start; end + i < me->len; ++i) {
-        me->buf[i] = me->buf[end + i];
+    for(int i = 0; end + i < me->len; ++i) {
+        me->buf[i + start] = me->buf[end + i];
     }
     me->len -= (end-start);
 }
@@ -135,8 +136,8 @@ int appendLines(struct buffer * buf, int start, int end) {
     }
     i++;
     while(1) {
-        if(fgets(tmp, sizeof(tmp), stdin) == NULL) return;
-        if(tmp[0] == '.') return;
+        if(fgets(tmp, sizeof(tmp), stdin) == NULL) return 1;
+        if(tmp[0] == '.') return 1;
         int size = strlen(tmp);
         int retVal = insertString(buf, tmp, i, size);
         if(retVal == 0) return 0;
