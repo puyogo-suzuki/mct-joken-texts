@@ -23,7 +23,7 @@ int newString(char * content, int size, struct buffer * result) {
 int insertString(struct buffer * me, char * content, int start, int size) {
     if(me->cap - me->len < size) {
         int new_cap = me->cap + BUFFER_EXTEND_SIZE;
-        while(new_cap < me-len + size)
+        while(new_cap < me->len + size)
             new_cap += BUFFER_EXTEND_SIZE;
         char * new_buf = (char *)realloc(me->buf, new_cap);
         if(new_buf != NULL) {
